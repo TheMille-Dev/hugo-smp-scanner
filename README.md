@@ -1,6 +1,6 @@
 # 📡 Hugo SMP Intelligence Scanner v2.0
 
-A cyberpunk-themed, lightweight intelligence scanner designed to query and display detailed player profiles from the **Hugo SMP**. It aggregates data from the Mojang API, the official HugoSMP Tracker API, and server-side scraping to provide a comprehensive overview of a player's statistics, economy, recent activities, and more.
+A cyberpunk-themed, lightweight intelligence scanner designed to query and display detailed player profiles from the **Hugo SMP**. It aggregates data from the Mojang API, the unofficial HugoSMP Tracker API, and server-side scraping to provide a comprehensive overview of a player's statistics, economy, recent activities, and more.
 
 ## ✨ Features
 
