@@ -7,7 +7,7 @@ A cyberpunk-themed, lightweight intelligence scanner designed to query and displ
 - **Player Intel:** Displays UUID, rank, faction, level, online status, playtime, and timestamps (first join / last seen).
 - **Economy Tracking:** Shows current balance and recent activities (auctions, purchases, sales).
 - **Combat Stats:** Real-time Kills, Deaths, and K/D Ratio calculation.
-- **Dynamic Assets:** Automatically fetches Minecraft player avatars and generates 3D renders of skins.
+- **Dynamic Assets:** Automatically fetches Minecraft player avatars.
 - **Cyberpunk UI:** Fully responsive, animated grid layout with a sleek terminal/hacker aesthetic.
 
 ## 🚀 Getting Started Locally
