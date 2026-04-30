@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hugo SMP · Player Intel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --bg2: #0d1218;
+    --bg3: #111820;
+    --border: #1e2d3d;
+    --border-bright: #2a4055;
+    --green: #00ff88;
+    --green-dim: #00c866;
+    --green-glow: rgba(0,255,136,0.15);
+    --amber: #ffb400;
+    --amber-dim: #cc8f00;
+    --red: #ff4444;
+    --blue: #4488ff;
+    --text: #c8d8e8;
+    --text-dim: #5a7a8a;
+    --text-bright: #e8f4ff;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Rajdhani', sans-serif;
+    --display: 'Orbitron', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Corner decoration */
+  .corner-deco {
+    position: fixed;
+    top: 0; left: 0;
+    width: 200px; height: 200px;
+    border-left: 1px solid var(--green);
+    border-top: 1px solid var(--green);
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .corner-deco.br {
+    top: auto; left: auto;
+    bottom: 0; right: 0;
+    border-left: none; border-top: none;
+    border-right: 1px solid var(--green);
+    border-bottom: 1px solid var(--green);
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+
+  .logo-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    opacity: 0.7;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 900;
+    color: var(--text-bright);
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  h1 span {
+    color: var(--green);
+    text-shadow: 0 0 30px var(--green), 0 0 60px rgba(0,255,136,0.3);
+  }
+
+  .header-sub {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-top: 12px;
+  }
+
+  /* Search */
+  .search-wrap {
+    position: relative;
+    max-width: 540px;
+    margin: 0 auto 48px;
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: var(--bg2);
+    border: 1px solid var(--border-bright);
+    border-radius: 2px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-box:focus-within {
+    border-color: var(--green);
+    box-shadow: 0 0 0 1px var(--green), 0 0 20px var(--green-glow);
+  }
+
+  .search-prefix {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--green);
+    padding: 0 12px 0 16px;
+    opacity: 0.7;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  #searchInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-bright);
+    font-family: var(--mono);
+    font-size: 16px;
+    padding: 16px 8px;
+    letter-spacing: 1px;
+  }
+
+  #searchInput::placeholder {
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  #searchBtn {
+    background: var(--green);
+    border: none;
+    color: #000;
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 0 20px;
+    height: 52px;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+  }
+
+  #searchBtn:hover {
+    background: #00ffaa;
+    box-shadow: 0 0 20px rgba(0,255,136,0.4);
+  }
+
+  #searchBtn:active { transform: scale(0.98); }
+  #searchBtn.loading { background: var(--green-dim); cursor: wait; }
+
+  /* Status */
+  #status {
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: center;
+    margin-top: 12px;
+    min-height: 18px;
+    transition: color 0.2s;
+  }
+
+  /* Result */
+  #result { display: none; animation: fadeIn 0.4s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Profile header */
+  .profile-header {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 28px;
+    align-items: start;
+    margin-bottom: 28px;
+    padding: 28px;
+    background: var(--bg2);
+    border: 1px solid var(--border-bright);
+    border-top: 2px solid var(--green);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .profile-header::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle at top right, rgba(0,255,136,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .avatar-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .avatar-img {
+    width: 88px;
+    height: 88px;
+    image-rendering: pixelated;
+    display: block;
+    border: 2px solid var(--border-bright);
+  }
+
+  .online-dot {
+    position: absolute;
+    bottom: -4px; right: -4px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+    background: var(--text-dim);
+  }
+  .online-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .online-dot.offline { background: var(--red); }
+
+  .profile-info { min-width: 0; }
+
+  .profile-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--green);
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+    opacity: 0.8;
+  }
+
+  .profile-name {
+    font-family: var(--display);
+    font-size: clamp(22px, 4vw, 36px);
+    font-weight: 900;
+    color: var(--text-bright);
+    letter-spacing: 1px;
+    line-height: 1;
+    margin-bottom: 8px;
+    word-break: break-all;
+  }
+
+  .profile-uuid {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  .profile-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    padding: 4px 10px;
+    border: 1px solid;
+    text-transform: uppercase;
+  }
+
+  .badge.rank { border-color: var(--amber); color: var(--amber); }
+  .badge.faction { border-color: var(--blue); color: var(--blue); }
+  .badge.level { border-color: var(--green); color: var(--green); }
+
+  /* Grid sections */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 600px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .profile-header { grid-template-columns: 1fr; }
+  }
+
+  /* Stat card */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 2px; height: 100%;
+    background: var(--green);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .card:hover::after { opacity: 1; }
+
+  .card-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card-label .icon { color: var(--green); font-size: 12px; }
+
+  .card-value {
+    font-family: var(--display);
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1;
+    word-break: break-all;
+  }
+
+  .card-value.mono {
+    font-family: var(--mono);
+    font-size: clamp(14px, 2vw, 18px);
+  }
+
+  .card-value .unit {
+    font-size: 0.55em;
+    color: var(--text-dim);
+    font-weight: 400;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
+  .card-value.green { color: var(--green); }
+  .card-value.amber { color: var(--amber); }
+  .card-value.red { color: var(--red); }
+  .card-value.blue { color: var(--blue); }
+
+  .card-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* Section title */
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border-bright), transparent);
+  }
+
+  /* Name history */
+  .name-history {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+
+  .name-history-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .name-entry {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+
+  .name-entry.current {
+    color: var(--green);
+    border-color: var(--green);
+    box-shadow: 0 0 8px var(--green-glow);
+  }
+
+  .name-entry .date {
+    display: block;
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    opacity: 0.6;
+  }
+
+  /* Links */
+  .link-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .ext-link {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 1px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ext-link:hover {
+    color: var(--green);
+    border-color: var(--green);
+    background: var(--green-glow);
+  }
+
+  /* Skin viewer */
+  .skin-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 20px;
+    text-align: center;
+  }
+
+  .skin-img {
+    height: 180px;
+    image-rendering: pixelated;
+    margin: 0 auto;
+    display: block;
+    transition: transform 0.3s;
+  }
+
+  .skin-img:hover { transform: scale(1.1) rotate(-2deg); }
+
+  /* Raw data */
+  .raw-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .raw-data {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: pre-wrap;
+    overflow-x: auto;
+    line-height: 1.7;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .raw-data .key { color: var(--blue); }
+  .raw-data .val-str { color: var(--amber); }
+  .raw-data .val-num { color: var(--green); }
+  .raw-data .val-bool { color: var(--red); }
+  .raw-data .val-null { color: var(--text-dim); }
+
+  /* Activities */
+  .activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .activity-item {
+    display: grid;
+    grid-template-columns: 48px 1fr auto;
+    gap: 16px;
+    align-items: center;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 12px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .activity-item:hover {
+    border-color: var(--border-bright);
+    background: rgba(42, 64, 85, 0.1);
+  }
+
+  .activity-img-wrap {
+    width: 48px;
+    height: 48px;
+    background: var(--bg);
+    border: 1px solid var(--border-bright);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .activity-img {
+    width: 32px;
+    height: 32px;
+    image-rendering: pixelated;
+  }
+  
+  .activity-qty {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    background: var(--bg3);
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 4px;
+    line-height: 1;
+  }
+
+  .activity-details {
+    min-width: 0;
+  }
+
+  .activity-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+    text-transform: capitalize;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .activity-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 12px;
+  }
+
+  .activity-meta .type {
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .activity-meta .type.order {
+    color: var(--amber);
+  }
+
+  .activity-price {
+    text-align: right;
+  }
+
+  .activity-total {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--amber);
+    margin-bottom: 4px;
+  }
+
+  .activity-unit {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  /* Error */
+  .error-box {
+    background: rgba(255,68,68,0.05);
+    border: 1px solid rgba(255,68,68,0.3);
+    padding: 20px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--red);
+  }
+
+  /* Pulse anim for online dot */
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,136,0.5); }
+    50% { box-shadow: 0 0 0 6px rgba(0,255,136,0); }
+  }
+  .online-dot.online { animation: pulse 2s infinite; }
+
+  /* Null value */
+  .null-val {
+    color: var(--text-dim);
+    font-size: 0.8em;
+    font-family: var(--mono);
+    letter-spacing: 1px;
+  }
+
+  /* Timestamp */
+  .fetched-at {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: right;
+    margin-top: 16px;
+    letter-spacing: 1px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+  /* Scan line effect */
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+
+  .scanline {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,255,136,0.08), transparent);
+    pointer-events: none;
+    z-index: 100;
+    animation: scanline 4s linear infinite;
+    opacity: 0;
+  }
+  body.scanning .scanline { opacity: 1; }
+
+  .separator {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-bright), transparent);
+    margin: 24px 0;
+  }
+</style>
+</head>
+<body>
+  <div class="corner-deco"></div>
+  <div class="corner-deco br"></div>
+  <div class="scanline"></div>
+
+  <div class="container">
+    <header>
+      <div class="logo-tag">// INTELLIGENCE SYSTEM v2.0</div>
+      <h1>HUGO <span>SMP</span></h1>
+      <p class="header-sub">PLAYER · PROFILE · SCANNER</p>
+    </header>
+
+    <div class="search-wrap">
+      <div class="search-box">
+        <span class="search-prefix">player://</span>
+        <input type="text" id="searchInput" placeholder="Gamertag eingeben..." autocomplete="off" spellcheck="false">
+        <button id="searchBtn" onclick="scan()">SCAN</button>
+      </div>
+      <div id="status"></div>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const input = document.getElementById('searchInput');
+    const btn = document.getElementById('searchBtn');
+    const status = document.getElementById('status');
+    const result = document.getElementById('result');
+
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') scan(); });
+
+    function setStatus(msg, color = '#5a7a8a') {
+      status.textContent = msg;
+      status.style.color = color;
+    }
+
+    function fmt(val, fallback = null) {
+      if (val === null || val === undefined || val === '') {
+        return fallback !== null ? fallback : '<span class="null-val">── N/A ──</span>';
+      }
+      return val;
+    }
+
+    function fmtNum(n) {
+      if (n === null || n === undefined) return '<span class="null-val">──</span>';
+      return Number(n).toLocaleString('de-DE');
+    }
+
+    function syntaxHighlight(obj) {
+      const json = JSON.stringify(obj, null, 2);
+      return json
+        .replace(/"([^"]+)":/g, '<span class="key">"$1"</span>:')
+        .replace(/: "([^"]*?)"/g, ': <span class="val-str">"$1"</span>')
+        .replace(/: (-?\d+\.?\d*)/g, ': <span class="val-num">$1</span>')
+        .replace(/: (true|false)/g, ': <span class="val-bool">$1</span>')
+        .replace(/: null/g, ': <span class="val-null">null</span>');
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return null;
+      try {
+        return new Date(dateStr).toLocaleDateString('de-DE', {
+          year: 'numeric', month: 'long', day: 'numeric'
+        });
+      } catch { return dateStr; }
+    }
+
+    async function scan() {
+      const name = input.value.trim();
+      if (!name) { setStatus('⚠ Bitte einen Namen eingeben', '#ffb400'); return; }
+
+      btn.textContent = 'SCANNING…';
+      btn.classList.add('loading');
+      btn.disabled = true;
+      document.body.classList.add('scanning');
+      setStatus(`→ Scanne "${name}"…`, '#00ff88');
+      result.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/scan/${encodeURIComponent(name)}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          result.innerHTML = `<div class="error-box">⚠ ${data.error || 'Spieler nicht gefunden'}</div>`;
+          result.style.display = 'block';
+          setStatus('Kein Profil gefunden.', '#ff4444');
+          return;
+        }
+
+        setStatus(`✓ Profil geladen — ${new Date().toLocaleTimeString('de-DE')}`, '#00ff88');
+        renderProfile(data);
+
+      } catch (err) {
+        result.innerHTML = `<div class="error-box">⚠ Verbindungsfehler: ${err.message}</div>`;
+        result.style.display = 'block';
+        setStatus('Fehler beim Laden.', '#ff4444');
+      } finally {
+        btn.textContent = 'SCAN';
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        document.body.classList.remove('scanning');
+      }
+    }
+
+    function renderProfile(d) {
+      const smp = d.smp || {};
+      const isOnline = smp.online;
+
+      // Fallback avatar: first try hugosmp-tracker, then crafatar
+      const avatarUrl = d.avatar || d.avatar_fallback;
+
+      let trackerHtml = '';
+      if (d.tracker_api) {
+        trackerHtml = `
+          <div class="section-title">Tracker API · Rohdaten</div>
+          <div class="raw-section">
+            <pre class="raw-data">${syntaxHighlight(d.tracker_api)}</pre>
+          </div>`;
+      }
+
+      let activityHtml = '';
+      if (d.tracker_api && d.tracker_api.recentActivities && d.tracker_api.recentActivities.length > 0) {
+        activityHtml = `
+          <div class="section-title">Letzte Aktivitäten</div>
+          <div class="activity-list">
+            ${d.tracker_api.recentActivities.map(act => {
+              const itemName = act.materialType.replace(/_/g, ' ');
+              const isOrder = act.type === 'order';
+              const imgUrl = `https://mcapi.net/api/image/icon/${act.materialType}`;
+              const qtyHtml = act.quantity > 1 ? `<div class="activity-qty">x${fmtNum(act.quantity)}</div>` : '';
+              const unitHtml = act.quantity > 1 ? `<div class="activity-unit">$${fmtNum(act.valuePerItem)} / Stk</div>` : '';
+              
+              return `
+                <div class="activity-item">
+                  <div class="activity-img-wrap">
+                    <img src="${imgUrl}" alt="${itemName}" class="activity-img" onerror="this.style.display='none'">
+                    ${qtyHtml}
+                  </div>
+                  <div class="activity-details">
+                    <div class="activity-name">${itemName}</div>
+                    <div class="activity-meta">
+                      <span class="type ${isOrder ? 'order' : ''}">${isOrder ? 'Kaufanfrage' : 'Auktion'}</span>
+                      <span class="date">${formatDate(act.createdAt)}</span>
+                    </div>
+                  </div>
+                  <div class="activity-price">
+                    <div class="activity-total">$${fmtNum(act.totalValue)}</div>
+                    ${unitHtml}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+
+      let displayBalance = smp.balance;
+      if (!displayBalance && d.tracker_api && d.tracker_api.latestBalance !== null && d.tracker_api.latestBalance !== undefined) {
+        displayBalance = `$${fmtNum(d.tracker_api.latestBalance)}`;
+      }
+
+      result.innerHTML = `
+        <!-- Profile Header -->
+        <div class="profile-header">
+          <div class="avatar-wrap">
+            <img class="avatar-img" src="${avatarUrl}" alt="${d.name}"
+              onerror="this.src='${d.avatar_fallback}'"
+              style="image-rendering:pixelated">
+            <div class="online-dot ${isOnline === true ? 'online' : isOnline === false ? 'offline' : ''}"></div>
+          </div>
+          <div class="profile-info">
+            <div class="profile-tag">// PLAYER PROFILE</div>
+            <div class="profile-name">${d.name}</div>
+            <div class="profile-uuid">${d.uuid_formatted || d.uuid || '—'}</div>
+            <div class="profile-badges">
+              ${smp.rank ? `<span class="badge rank">⬡ ${smp.rank}</span>` : ''}
+              ${smp.faction ? `<span class="badge faction">⚑ ${smp.faction}</span>` : ''}
+              ${smp.level !== null && smp.level !== undefined ? `<span class="badge level">LVL ${smp.level}</span>` : ''}
+              ${isOnline === true ? `<span class="badge level" style="border-color:#00ff88;color:#00ff88">● ONLINE</span>` : ''}
+              ${isOnline === false ? `<span class="badge" style="border-color:#ff4444;color:#ff4444">● OFFLINE</span>` : ''}
+            </div>
+          </div>
+        </div>
+
+        <!-- SMP Stats -->
+        <div class="section-title">Combat · Statistiken</div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-label"><span class="icon">⚔</span>Kills</div>
+            <div class="card-value green">${fmtNum(smp.kills)}</div>
+          </div>
+          <div class="card">
+            <div class="card-label"><span class="icon">☠</span>Deaths</div>
+            <div class="card-value red">${fmtNum(smp.deaths)}</div>
+          </div>
+          <div class="card">
+            <div class="card-label"><span class="icon">⚡</span>K/D Ratio</div>
+            <div class="card-value ${smp.kd_ratio >= 1 ? 'green' : 'red'}">${fmt(smp.kd_ratio)}</div>
+          </div>
+        </div>
+
+        <div class="section-title">Economy · Aktivität</div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-label"><span class="icon">$</span>Kontostand</div>
+            <div class="card-value amber mono">${fmt(displayBalance)}</div>
+          </div>
+          <div class="card">
+            <div class="card-label"><span class="icon">⏱</span>Spielzeit</div>
+            <div class="card-value mono">${fmt(smp.playtime)}</div>
+          </div>
+        </div>
+
+        <div class="section-title">Zeitstempel</div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-label"><span class="icon">📅</span>Erster Join</div>
+            <div class="card-value mono" style="font-size:clamp(12px,2vw,16px)">${fmt(formatDate(smp.first_join) || smp.first_join)}</div>
+          </div>
+          <div class="card">
+            <div class="card-label"><span class="icon">🕐</span>Zuletzt gesehen</div>
+            <div class="card-value mono" style="font-size:clamp(12px,2vw,16px)">${fmt(formatDate(smp.last_seen) || smp.last_seen)}</div>
+            ${d.account_created ? `<div class="card-sub">MC-Account: ${formatDate(d.account_created)}</div>` : ''}
+          </div>
+        </div>
+
+        <div class="separator"></div>
+
+        <!-- Recent Activities -->
+        ${activityHtml}
+
+
+        <!-- Tracker API Rohdaten -->
+        ${trackerHtml}
+
+        <!-- Raw JSON -->
+        <div class="section-title">Gesamtprofil · JSON</div>
+        <div class="raw-section">
+          <pre class="raw-data">${syntaxHighlight(d)}</pre>
+        </div>
+
+        <div class="fetched-at">abgerufen: ${d.fetched_at ? new Date(d.fetched_at).toLocaleString('de-DE') : '—'}</div>
+      `;
+
+      result.style.display = 'block';
+      result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  </script>
+</body>
+</html>
